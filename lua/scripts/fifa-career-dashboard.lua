@@ -2,6 +2,60 @@ require 'imports/career_mode/helpers'
 require 'imports/other/helpers'
 local json = require("imports/external/json")
 
+local attributeNameList = {
+    "birthdate",
+    "overallrating",
+    "potential",
+    "nationality",
+    "height",
+    "weight",
+    "preferredfoot",
+    "preferredposition1",
+    "preferredposition2",
+    "preferredposition3",
+    "preferredposition4",
+    "skillmoves",
+    "weakfootabilitytypecode",
+    "attackingworkrate",
+    "defensiveworkrate",
+    -- pace
+    "acceleration",
+    "sprintspeed",
+    -- attacking
+    "positioning",
+    "finishing",
+    "shotpower",
+    "longshots",
+    "volleys",
+    "penalties",
+    -- passing
+    "vision",
+    "crossing",
+    "freekickaccuracy",
+    "shortpassing",
+    "longpassing",
+    "curve",
+    -- dribbling
+    "agility",
+    "balance",
+    "reactions",
+    "ballcontrol",
+    "dribbling",
+    "composure",
+    -- defending
+    "interceptions",
+    "headingaccuracy",
+    "defensiveawareness",
+    "standingtackle",
+    "slidingtackle",
+    -- physical
+    "jumping",
+    "stamina",
+    "strength",
+    "aggression"
+}
+
+
 function GetUserSeniorTeamPlayerIDs()
     local result = {}
     local user_teamid = GetUserTeamID()
@@ -25,6 +79,19 @@ function GetUserSeniorTeamPlayerIDs()
     return result
 end
 
+function postPlayers(jsonStr)
+    -- POST to API
+    local url = "http://localhost:8888/api/v1/player/bulk"
+    -- 转义 jsonStr
+    jsonStr = string.gsub(jsonStr, '"', '\\"')
+    local command = 'curl -X POST -H "Content-Type: application/json"'
+    command = command .. ' -d "' .. jsonStr .. '"'
+    command = command .. ' ' .. url
+    Log(command)
+    local res = os.execute(command)
+    Log(res)
+end
+
 function sendTeamPlayerAttr()
     local bIsInCM = IsInCM()
     if not bIsInCM then return end
@@ -42,29 +109,49 @@ function sendTeamPlayerAttr()
     local players_table = LE.db:GetTable("players")
     local current_record = players_table:GetFirstRecord()
 
+    local jsonStr = ""
+    jsonStr = jsonStr .. "["
+    -- now is [
+
     local playerid = 0
     while current_record > 0 do
         playerid = players_table:GetRecordFieldValue(current_record, "playerid")
         if user_team_playerids[playerid] then
-            local overallrating = players_table:GetRecordFieldValue(current_record, "overallrating")
-            local potential = players_table:GetRecordFieldValue(current_record, "potential")
-             Log(string.format("PlayerID: %d, OverallRating: %d, Potential: %d", playerid, overallrating, potential))
+            local currentPlayerJsonStr = ""
 
-            -- POST to API
-            local url = "http://localhost:8888/api/v1/player/" .. playerid
-            local dataStr = string.format("currentDate=%s&overallrating=%d&potential=%d", dateStr, overallrating, potential)
-            local command = string.format('curl %s -X POST -d "%s"', url, dataStr)
-            -- example: curl http://localhost:8888/api/v1/player/1 -X POST -d "currentDate=2021-10-10&overallrating=80&potential=90"
-            Log(command)
-            local res = os.execute(command)
-            Log(res)
+            currentPlayerJsonStr = currentPlayerJsonStr .. "{"
+            -- now currentPlayerJsonStr is '{'
+
+            -- add playerid
+            currentPlayerJsonStr = currentPlayerJsonStr .. string.format('"playerid": %d', playerid)
+            -- now currentPlayerJsonStr is {"playerid": playerid
+
+            -- add current date
+            currentPlayerJsonStr = currentPlayerJsonStr .. string.format(', "date": "%s"', dateStr)
+            -- now currentPlayerJsonStr is {"playerid": playerid, "date": "dateStr"
+
+            -- get all attributes
+            for i, attrName in ipairs(attributeNameList) do
+                local attrValue = players_table:GetRecordFieldValue(current_record, attrName)
+                currentPlayerJsonStr = currentPlayerJsonStr .. string.format(', "%s": "%s"', attrName, attrValue)
+                -- now currentPlayerJsonStr is {"playerid": playerid, "date": "dateStr", "attrName": "attrValue"
+            end
+
+            currentPlayerJsonStr = currentPlayerJsonStr .. "}"
+            -- now currentPlayerJsonStr is {"playerid": playerid, "date": "dateStr", "attrName": "attrValue"}
 
             updated_players = updated_players + 1
         end
-
+        jsonStr = jsonStr .. currentPlayerJsonStr
+        -- now jsonStr is [{"playerid": playerid, "date": "dateStr", "attrName": "attrValue"}
         if (updated_players == players_count) then
+            jsonStr = jsonStr .. "]"
+            -- now jsonStr is [{...}, ..., {...}]
+            postPlayers(jsonStr)
             return
         end
+        jsonStr = jsonStr .. ","
+        -- now is [{...},
         current_record = players_table:GetNextValidRecord()
     end
 end
