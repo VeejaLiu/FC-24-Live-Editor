@@ -124,9 +124,6 @@ function sendTeamPlayerAttr()
     while current_record > 0 do
         playerid = players_table:GetRecordFieldValue(current_record, "playerid")
         if user_team_playerids[playerid] then
-            local playername = GetPlayerName(playerid)
-            Log(string.format("Player Name: %s", playername))
-
             local currentPlayerJsonStr = ""
 
             currentPlayerJsonStr = currentPlayerJsonStr .. "{"
@@ -137,7 +134,10 @@ function sendTeamPlayerAttr()
             -- now currentPlayerJsonStr is {"playerid": playerid
 
             -- add playername
+            local playername = GetPlayerName(playerid)
+            Log(string.format("Player Name: %s", playername))
             currentPlayerJsonStr = currentPlayerJsonStr .. string.format(', "playername": "%s"', playername)
+
             -- now currentPlayerJsonStr is {"playerid": playerid, "playername": "playername"
             -- add current date
             currentPlayerJsonStr = currentPlayerJsonStr .. string.format(', "date": "%s"', dateStr)
