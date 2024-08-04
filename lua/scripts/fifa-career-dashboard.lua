@@ -55,7 +55,6 @@ local attributeNameList = {
     "aggression"
 }
 
-
 function GetUserSeniorTeamPlayerIDs()
     local result = {}
     local user_teamid = GetUserTeamID()
@@ -83,18 +82,26 @@ function postPlayers(jsonStr)
     -- POST to API
     local url = "http://localhost:8888/api/v1/player/bulk"
     -- 转义 jsonStr
+    -- 保存到文件
+    local file = io.open("players.json", "w")
+    file:write(jsonStr)
+    file:close()
+
     jsonStr = string.gsub(jsonStr, '"', '\\"')
     local command = 'curl -X POST -H "Content-Type: application/json"'
-    command = command .. ' -d "' .. jsonStr .. '"'
+    -- 从文件读取
+    command = command .. ' -d "@players.json"'
+    --command = command .. ' -d "' .. jsonStr .. '"'
     command = command .. ' ' .. url
-    Log(command)
-    local res = os.execute(command)
-    Log(res)
+    Log('Command: ' .. command)
+    os.execute(command)
 end
 
 function sendTeamPlayerAttr()
     local bIsInCM = IsInCM()
-    if not bIsInCM then return end
+    if not bIsInCM then
+        return
+    end
 
     -- local saveUID = GetSaveUID()
     local currentdate = GetCurrentDate()
@@ -117,6 +124,9 @@ function sendTeamPlayerAttr()
     while current_record > 0 do
         playerid = players_table:GetRecordFieldValue(current_record, "playerid")
         if user_team_playerids[playerid] then
+            local playername = GetPlayerName(playerid)
+            Log(string.format("Player Name: %s", playername))
+
             local currentPlayerJsonStr = ""
 
             currentPlayerJsonStr = currentPlayerJsonStr .. "{"
@@ -126,6 +136,9 @@ function sendTeamPlayerAttr()
             currentPlayerJsonStr = currentPlayerJsonStr .. string.format('"playerid": %d', playerid)
             -- now currentPlayerJsonStr is {"playerid": playerid
 
+            -- add playername
+            currentPlayerJsonStr = currentPlayerJsonStr .. string.format(', "playername": "%s"', playername)
+            -- now currentPlayerJsonStr is {"playerid": playerid, "playername": "playername"
             -- add current date
             currentPlayerJsonStr = currentPlayerJsonStr .. string.format(', "date": "%s"', dateStr)
             -- now currentPlayerJsonStr is {"playerid": playerid, "date": "dateStr"
@@ -141,29 +154,31 @@ function sendTeamPlayerAttr()
             -- now currentPlayerJsonStr is {"playerid": playerid, "date": "dateStr", "attrName": "attrValue"}
 
             updated_players = updated_players + 1
+            jsonStr = jsonStr .. currentPlayerJsonStr
+            -- now jsonStr is [{"playerid": playerid, "date": "dateStr", "attrName": "attrValue"}
+            if (updated_players < players_count) then
+                jsonStr = jsonStr .. ","
+                -- now is [{...},
+            end
         end
-        jsonStr = jsonStr .. currentPlayerJsonStr
-        -- now jsonStr is [{"playerid": playerid, "date": "dateStr", "attrName": "attrValue"}
         if (updated_players == players_count) then
             jsonStr = jsonStr .. "]"
             -- now jsonStr is [{...}, ..., {...}]
             postPlayers(jsonStr)
             return
         end
-        jsonStr = jsonStr .. ","
-        -- now is [{...},
         current_record = players_table:GetNextValidRecord()
     end
 end
 
 function OnEvent(events_manager, event_id, event)
-   if (
-       event_id == ENUM_CM_EVENT_MSG_WEEK_PASSED
-   ) then
-       sendTeamPlayerAttr()
-   end
+    if (
+            event_id == ENUM_CM_EVENT_MSG_WEEK_PASSED
+    ) then
+        sendTeamPlayerAttr()
+    end
 end
 
--- sendTeamPlayerAttr()
-AddEventHandler("post__CareerModeEvent", OnEvent)
+sendTeamPlayerAttr()
+-- AddEventHandler("post__CareerModeEvent", OnEvent)
 
