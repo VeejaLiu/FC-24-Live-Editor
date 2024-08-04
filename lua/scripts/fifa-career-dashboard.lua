@@ -135,7 +135,7 @@ function sendTeamPlayerAttr()
 
             -- add playername
             local playername = GetPlayerName(playerid)
-            Log(string.format("Player Name: %s", playername))
+            --Log(string.format("Player Name: %s", playername))
             currentPlayerJsonStr = currentPlayerJsonStr .. string.format(', "playername": "%s"', playername)
 
             -- now currentPlayerJsonStr is {"playerid": playerid, "playername": "playername"
