@@ -52,7 +52,14 @@ local attributeNameList = {
     "jumping",
     "stamina",
     "strength",
-    "aggression"
+    "aggression",
+    -- goalkeeping
+    "gkdiving",
+    "gkhandling",
+    "gkkicking",
+    "gkpositioning",
+    "gkreflexes",
+    -- other
 }
 
 function GetUserSeniorTeamPlayerIDs()
