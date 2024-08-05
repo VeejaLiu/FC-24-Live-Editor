@@ -57,22 +57,22 @@ local attributeNameList = {
 
 function GetUserSeniorTeamPlayerIDs()
     local result = {}
-    local user_teamid = GetUserTeamID()
-    Log(string.format("User Team ID: %d", user_teamid))
+    local userTeamID = GetUserTeamID()
+    Log(string.format("User Team ID: %d", userTeamID))
 
     -- From this table should be the quickest I guess
-    local career_playercontract_table = LE.db:GetTable("career_playercontract")
-    local current_record = career_playercontract_table:GetFirstRecord()
+    local careerPlayerContractTable = LE.db:GetTable("career_playercontract")
+    local current_record = careerPlayerContractTable:GetFirstRecord()
     local c = 1
     while current_record > 0 do
-        local teamid = career_playercontract_table:GetRecordFieldValue(current_record, "teamid")
-        if teamid == user_teamid then
-            local playerid = career_playercontract_table:GetRecordFieldValue(current_record, "playerid")
-            result[playerid] = true
-            Log(string.format("%d: %d", c, playerid))
+        local teamID = careerPlayerContractTable:GetRecordFieldValue(current_record, "teamid")
+        if teamID == userTeamID then
+            local playerID = careerPlayerContractTable:GetRecordFieldValue(current_record, "playerid")
+            result[playerID] = true
+            Log(string.format("%d: %d", c, playerID))
             c = c + 1
         end
-        current_record = career_playercontract_table:GetNextValidRecord()
+        current_record = careerPlayerContractTable:GetNextValidRecord()
     end
 
     return result
@@ -104,12 +104,12 @@ function sendTeamPlayerAttr()
     end
 
     -- local saveUID = GetSaveUID()
-    local currentdate = GetCurrentDate()
-    local dateStr = string.format("%d-%d-%d", currentdate.year, currentdate.month, currentdate.day)
+    local currentDate = GetCurrentDate()
+    local dateStr = string.format("%d-%d-%d", currentDate.year, currentDate.month, currentDate.day)
     Log(string.format("Current Date: %s", dateStr))
 
-    local user_team_playerids = GetUserSeniorTeamPlayerIDs()
-    local players_count = table_count(user_team_playerids)
+    local userTeamPlayerIDs = GetUserSeniorTeamPlayerIDs()
+    local players_count = table_count(userTeamPlayerIDs)
     local updated_players = 0
 
     -- Get Players Table
@@ -120,45 +120,40 @@ function sendTeamPlayerAttr()
     jsonStr = jsonStr .. "["
     -- now is [
 
-    local playerid = 0
+    local playerID = 0
     while current_record > 0 do
-        playerid = players_table:GetRecordFieldValue(current_record, "playerid")
-        if user_team_playerids[playerid] then
+        playerID = players_table:GetRecordFieldValue(current_record, "playerid")
+        if userTeamPlayerIDs[playerID] then
             local currentPlayerJsonStr = ""
 
             currentPlayerJsonStr = currentPlayerJsonStr .. "{"
             -- now currentPlayerJsonStr is '{'
 
-            -- add playerid
-            currentPlayerJsonStr = currentPlayerJsonStr .. string.format('"playerid": %d', playerid)
-            -- now currentPlayerJsonStr is {"playerid": playerid
-
-            -- add playername
-            local playername = GetPlayerName(playerid)
-            --Log(string.format("Player Name: %s", playername))
-            currentPlayerJsonStr = currentPlayerJsonStr .. string.format(', "playername": "%s"', playername)
-
-            -- now currentPlayerJsonStr is {"playerid": playerid, "playername": "playername"
+            -- add playerID
+            currentPlayerJsonStr = currentPlayerJsonStr .. string.format('"playerID": %d', playerID)
+            -- add playerName
+            local playerName = GetPlayerName(playerID)
+            currentPlayerJsonStr = currentPlayerJsonStr .. string.format(', "playerName": "%s"', playerName)
             -- add current date
-            currentPlayerJsonStr = currentPlayerJsonStr .. string.format(', "date": "%s"', dateStr)
-            -- now currentPlayerJsonStr is {"playerid": playerid, "date": "dateStr"
+            currentPlayerJsonStr = currentPlayerJsonStr .. string.format(', "currentDate": "%s"', dateStr)
+            -- now currentPlayerJsonStr is {"playerID": playerID, "playerName": "playerName", "currentDate": "dateStr"
 
             -- get all attributes
             for i, attrName in ipairs(attributeNameList) do
                 local attrValue = players_table:GetRecordFieldValue(current_record, attrName)
                 currentPlayerJsonStr = currentPlayerJsonStr .. string.format(', "%s": "%s"', attrName, attrValue)
-                -- now currentPlayerJsonStr is {"playerid": playerid, "date": "dateStr", "attrName": "attrValue"
+                -- now currentPlayerJsonStr is {"playerID": playerID, "playerName": "playerName", "currentDate": "dateStr", "attrName": "attrValue"
             end
 
             currentPlayerJsonStr = currentPlayerJsonStr .. "}"
-            -- now currentPlayerJsonStr is {"playerid": playerid, "date": "dateStr", "attrName": "attrValue"}
+            -- now currentPlayerJsonStr is {"playerID": playerID, "playerName": "playerName", "currentDate": "dateStr", "attrName": "attrValue"}
 
             updated_players = updated_players + 1
             jsonStr = jsonStr .. currentPlayerJsonStr
-            -- now jsonStr is [{"playerid": playerid, "date": "dateStr", "attrName": "attrValue"}
+            -- now jsonStr is [{"playerID": playerID, "playerName": "playerName", "currentDate": "dateStr", "attrName": "attrValue"}
             if (updated_players < players_count) then
                 jsonStr = jsonStr .. ","
-                -- now is [{...},
+                -- now jsonStr is [{...},
             end
         end
         if (updated_players == players_count) then
