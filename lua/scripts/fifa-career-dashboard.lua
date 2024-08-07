@@ -94,11 +94,11 @@ function postPlayers(jsonStr)
     file:write(jsonStr)
     file:close()
     command = command .. ' -d "@fifa_career_dashboard_players.json"'
-    
+
     -- -- data from string
     -- jsonStr = string.gsub(jsonStr, '"', '\\"')
     -- command = command .. ' -d "' .. jsonStr .. '"'
-    
+
     -- Add URL
     command = command .. ' ' .. "http://localhost:8888/api/v1/player/bulk"
 
