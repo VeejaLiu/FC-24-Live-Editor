@@ -85,23 +85,30 @@ function GetUserSeniorTeamPlayerIDs()
     return result
 end
 
+-- Post to API
 function postPlayers(jsonStr)
-    -- POST to API
-    local url = "http://localhost:8888/api/v1/player/bulk"
-    -- 转义 jsonStr
-    -- 保存到文件
-    local file = io.open("players.json", "w")
+    local command = 'curl -X POST -H "Content-Type: application/json"'
+
+    -- Save to file, data from file
+    local file = io.open("fifa_career_dashboard_players.json", "w")
     file:write(jsonStr)
     file:close()
+    command = command .. ' -d "@fifa_career_dashboard_players.json"'
+    
+    -- -- data from string
+    -- jsonStr = string.gsub(jsonStr, '"', '\\"')
+    -- command = command .. ' -d "' .. jsonStr .. '"'
+    
+    -- Add URL
+    command = command .. ' ' .. "http://localhost:8888/api/v1/player/bulk"
 
-    jsonStr = string.gsub(jsonStr, '"', '\\"')
-    local command = 'curl -X POST -H "Content-Type: application/json"'
-    -- 从文件读取
-    command = command .. ' -d "@players.json"'
-    --command = command .. ' -d "' .. jsonStr .. '"'
-    command = command .. ' ' .. url
     Log('Command: ' .. command)
+
+    -- Upload to API
     os.execute(command)
+
+    -- delete file
+    os.remove("fifa_career_dashboard_players.json")
 end
 
 function sendTeamPlayerAttr()
